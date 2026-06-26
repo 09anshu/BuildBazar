@@ -2,8 +2,6 @@
 
 A modern, full-stack e-commerce web application for buying and selling construction materials and equipment, designed with an Amazon-like user experience.
 
-![BuildBazaar Preview](./client/public/favicon.ico) *(Add a screenshot here)*
-
 ## 🔹 TECH STACK
 - **Frontend**: React.js, React Router DOM, Tailwind CSS, Redux Toolkit, Lucide React
 - **Backend**: Node.js, Express, MongoDB, Mongoose
