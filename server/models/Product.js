@@ -59,6 +59,12 @@ const productSchema = mongoose.Schema(
       required: true,
       default: 0,
     },
+    wholesaleTiers: [
+      {
+        minQuantity: { type: Number, required: true },
+        price: { type: Number, required: true }
+      }
+    ],
     countInStock: {
       type: Number,
       required: true,

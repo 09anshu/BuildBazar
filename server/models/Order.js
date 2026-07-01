@@ -7,6 +7,19 @@ const orderSchema = mongoose.Schema(
       required: true,
       ref: 'User',
     },
+    orderType: {
+      type: String,
+      enum: ['standard', 'enquiry'],
+      default: 'standard'
+    },
+    enquiryStatus: {
+      type: String,
+      enum: ['pending', 'quoted', 'accepted', 'rejected'],
+      default: 'pending'
+    },
+    customNotes: {
+      type: String
+    },
     orderItems: [
       {
         name: { type: String, required: true },

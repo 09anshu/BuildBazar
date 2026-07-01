@@ -148,12 +148,12 @@ const HomePage = () => {
               Premium construction materials and equipment delivered to your site with dependable service for contractors and builders.
             </p>
             <div className="flex flex-wrap gap-4">
-              <button className="rounded-full bg-amber-400 px-8 py-3 font-bold text-slate-950 transition-colors hover:bg-amber-300">
+              <Link to="/all-products" className="rounded-full bg-amber-400 px-8 py-3 font-bold text-slate-950 transition-colors hover:bg-amber-300">
                 Shop All Materials
-              </button>
-              <button className="rounded-full border border-white/25 bg-white/10 px-8 py-3 font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/20">
+              </Link>
+              <Link to="/category/Machinery" className="rounded-full border border-white/25 bg-white/10 px-8 py-3 font-bold text-white backdrop-blur-sm transition-colors hover:bg-white/20">
                 Rent Machinery
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -233,9 +233,9 @@ const HomePage = () => {
             <h3 className="text-2xl font-bold text-blue-900 mb-2">Heavy Machinery Rental</h3>
             <p className="text-blue-800">Excavators, Cranes, and Bulldozers available for daily, weekly, and monthly rent.</p>
           </div>
-          <button className="bg-blue-600 text-white font-bold py-2 px-6 rounded-md hover:bg-blue-700 transition-colors">
+          <Link to="/category/Machinery" className="bg-blue-600 text-white font-bold py-2 px-6 rounded-md hover:bg-blue-700 transition-colors">
             Learn More
-          </button>
+          </Link>
         </div>
 
         {/* More Products */}

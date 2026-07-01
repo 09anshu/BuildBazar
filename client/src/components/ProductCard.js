@@ -15,6 +15,8 @@ const ProductCard = ({ product }) => {
       name: product.name,
       image: product.image,
       price: product.price,
+      basePrice: product.price,
+      wholesaleTiers: product.wholesaleTiers,
       countInStock: product.countInStock,
       qty: 1,
     }));

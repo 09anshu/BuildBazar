@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import axios from 'axios';
 import { listProductDetails } from '../store/slices/productSlice';
 import { addToCart } from '../store/slices/cartSlice';
 import { 
@@ -22,6 +23,13 @@ const ProductPage = () => {
   const dispatch = useDispatch();
 
   const { product, loading, error } = useSelector((state) => state.products);
+  const { userInfo } = useSelector((state) => state.auth);
+
+  // Enquiry Modal State
+  const [showEnquiry, setShowEnquiry] = useState(false);
+  const [enquiryQty, setEnquiryQty] = useState('');
+  const [enquiryNotes, setEnquiryNotes] = useState('');
+  const [enquiryLoading, setEnquiryLoading] = useState(false);
 
   useEffect(() => {
     dispatch(listProductDetails(id));
@@ -33,11 +41,48 @@ const ProductPage = () => {
       name: product.name,
       image: product.image,
       price: product.price,
+      basePrice: product.price,
+      wholesaleTiers: product.wholesaleTiers,
       countInStock: product.countInStock,
       qty,
     }));
     toast.success(`${product.name} added to cart!`);
     navigate('/cart');
+  };
+
+  const submitEnquiryHandler = async (e) => {
+    e.preventDefault();
+    if (!userInfo) {
+      toast.error('Please login to request a quote');
+      navigate('/login');
+      return;
+    }
+    
+    try {
+      setEnquiryLoading(true);
+      const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
+      const orderItems = [{
+        name: product.name,
+        qty: Number(enquiryQty),
+        image: product.image,
+        price: product.price,
+        product: product._id
+      }];
+      
+      await axios.post('/api/orders/enquiry', {
+        orderItems,
+        customNotes: enquiryNotes
+      }, config);
+      
+      toast.success('Bulk enquiry submitted successfully! Check your dashboard.');
+      setShowEnquiry(false);
+      setEnquiryQty('');
+      setEnquiryNotes('');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message);
+    } finally {
+      setEnquiryLoading(false);
+    }
   };
 
   const handleQtyChange = (type) => {
@@ -130,12 +175,56 @@ const ProductPage = () => {
                 <div className="bg-[#f8f9fa] rounded-3xl p-8 h-full flex flex-col">
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
                   
-                  <div className="mb-6">
-                    <p className="text-3xl font-black text-gray-900">₹ {product.price?.toLocaleString('en-IN')}</p>
-                    <p className="text-sm text-gray-500">Includes GST</p>
-                  </div>
+                  {/* Dynamic Active Price based on Qty */}
+                  {(() => {
+                    let activePrice = product.price;
+                    if (product.wholesaleTiers && product.wholesaleTiers.length > 0) {
+                      const sortedTiers = [...product.wholesaleTiers].sort((a, b) => b.minQuantity - a.minQuantity);
+                      for (let tier of sortedTiers) {
+                        if (qty >= tier.minQuantity) {
+                          activePrice = tier.price;
+                          break;
+                        }
+                      }
+                    }
+                    return (
+                      <div className="mb-6">
+                        <div className="flex items-end gap-3">
+                          <p className="text-3xl font-black text-gray-900">₹ {activePrice?.toLocaleString('en-IN')}</p>
+                          {activePrice < product.price && (
+                            <span className="text-sm font-bold text-emerald-600 mb-1 bg-emerald-50 px-2 py-0.5 rounded">Bulk Discount Active!</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500">Includes GST</p>
+                      </div>
+                    );
+                  })()}
 
-                  <div className="flex items-center gap-4 mb-6">
+                  {/* Wholesale Pricing Table */}
+                  {product.wholesaleTiers && product.wholesaleTiers.length > 0 && (
+                    <div className="mb-6 border border-amber-200 bg-amber-50 rounded-xl overflow-hidden">
+                      <div className="bg-amber-100/50 px-4 py-2 border-b border-amber-200">
+                        <h4 className="text-sm font-bold text-amber-900 flex items-center gap-2">
+                          <Zap className="h-4 w-4" /> Bulk Pricing Deals
+                        </h4>
+                      </div>
+                      <div className="p-3">
+                        <div className="grid grid-cols-2 gap-2 text-sm font-semibold text-gray-700">
+                          {product.wholesaleTiers
+                            .slice()
+                            .sort((a, b) => a.minQuantity - b.minQuantity)
+                            .map((tier, idx) => (
+                              <div key={idx} className="flex justify-between items-center bg-white border border-amber-100 rounded-lg px-3 py-2">
+                                <span>{tier.minQuantity}+ units</span>
+                                <span className="text-emerald-600">₹{tier.price.toLocaleString('en-IN')}/ea</span>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-4 mb-4">
                     {/* Quantity Selector */}
                     <div className="flex items-center border border-gray-300 bg-white rounded-lg h-12">
                       <button 
@@ -162,6 +251,14 @@ const ProductPage = () => {
                       Add to Cart
                     </button>
                   </div>
+
+                  {/* Request Bulk Quote Button */}
+                  <button 
+                    onClick={() => setShowEnquiry(true)}
+                    className="w-full h-12 mb-6 rounded-lg font-bold text-gray-700 border-2 border-gray-300 bg-white hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
+                  >
+                    Request Custom Bulk Quote
+                  </button>
 
                   {/* Delivery Estimate Box */}
                   <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
@@ -236,6 +333,63 @@ const ProductPage = () => {
                 </div>
               </div>
             </div>
+
+            {/* Bulk Enquiry Modal */}
+            {showEnquiry && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-amber-500 to-amber-600 p-6 text-white text-center">
+                    <h3 className="text-2xl font-black mb-1">Request a Quote</h3>
+                    <p className="text-sm font-medium opacity-90">For massive orders beyond our standard tiers.</p>
+                  </div>
+                  <form onSubmit={submitEnquiryHandler} className="p-6">
+                    <div className="mb-4">
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Product</label>
+                      <input type="text" disabled value={product.name} className="w-full bg-gray-100 border border-gray-200 rounded-lg p-3 text-gray-500 font-medium" />
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Estimated Quantity Needed</label>
+                      <input 
+                        type="number" 
+                        required 
+                        min="1"
+                        placeholder="e.g. 500"
+                        value={enquiryQty} 
+                        onChange={(e) => setEnquiryQty(e.target.value)} 
+                        className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-amber-400 outline-none" 
+                      />
+                    </div>
+                    <div className="mb-6">
+                      <label className="block text-sm font-bold text-gray-700 mb-2">Additional Notes / Delivery Requirements</label>
+                      <textarea 
+                        rows="3" 
+                        required
+                        placeholder="e.g. Need this delivered in tons to a high-security construction site."
+                        value={enquiryNotes} 
+                        onChange={(e) => setEnquiryNotes(e.target.value)} 
+                        className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-amber-400 outline-none" 
+                      ></textarea>
+                    </div>
+                    <div className="flex gap-3">
+                      <button 
+                        type="button" 
+                        onClick={() => setShowEnquiry(false)}
+                        className="flex-1 py-3 rounded-lg font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        type="submit" 
+                        disabled={enquiryLoading}
+                        className="flex-1 py-3 rounded-lg font-bold text-slate-900 bg-amber-400 hover:bg-amber-500 transition-colors flex justify-center items-center"
+                      >
+                        {enquiryLoading ? <div className="h-5 w-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></div> : 'Submit Enquiry'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

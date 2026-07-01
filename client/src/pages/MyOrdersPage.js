@@ -59,29 +59,44 @@ const MyOrdersPage = () => {
                 <div className="bg-gray-50 p-4 border-b border-gray-200 flex flex-wrap justify-between items-center text-xs text-gray-600 font-bold uppercase tracking-wider">
                   <div className="flex space-x-8">
                     <div>
-                      <p>Order Placed</p>
+                      <p>{order.orderType === 'enquiry' ? 'Quote Requested' : 'Order Placed'}</p>
                       <p className="font-normal text-gray-800">{new Date(order.createdAt).toLocaleDateString()}</p>
                     </div>
                     <div>
                       <p>Total</p>
-                      <p className="font-normal text-gray-800">₹{order.totalPrice.toLocaleString('en-IN')}</p>
+                      <p className="font-normal text-gray-800">
+                        {order.orderType === 'enquiry' && order.enquiryStatus === 'pending' 
+                          ? 'Pending Quote' 
+                          : `₹${order.totalPrice.toLocaleString('en-IN')}`}
+                      </p>
                     </div>
                     <div>
-                      <p>Ship To</p>
+                      <p>Requested By</p>
                       <p className="font-normal text-gray-800 text-blue-600 hover:underline cursor-pointer">{userInfo.name}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p>Order # {order._id}</p>
-                    <Link to={`/order/${order._id}`} className="text-blue-600 hover:underline lowercase font-normal">View order details</Link>
+                    <p>{order.orderType === 'enquiry' ? 'Quote #' : 'Order #'} {order._id}</p>
+                    <Link to={`/order/${order._id}`} className="text-blue-600 hover:underline lowercase font-normal">
+                      {order.orderType === 'enquiry' ? 'View quote details' : 'View order details'}
+                    </Link>
                   </div>
                 </div>
 
                 <div className="p-6">
                   <div className="flex items-center mb-6">
-                    <div className={`h-3 w-3 rounded-full mr-3 ${order.isDelivered ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+                    <div className={`h-3 w-3 rounded-full mr-3 ${
+                      order.orderType === 'enquiry' 
+                        ? (order.enquiryStatus === 'quoted' ? 'bg-amber-500' : order.enquiryStatus === 'accepted' ? 'bg-green-500' : 'bg-gray-400')
+                        : (order.isDelivered ? 'bg-green-500' : 'bg-orange-500')
+                    }`}></div>
                     <h3 className="text-lg font-bold">
-                      {order.isDelivered ? 'Delivered' : 'Arriving Soon'}
+                      {order.orderType === 'enquiry' 
+                        ? (order.enquiryStatus === 'pending' ? 'Quote Pending Review' 
+                           : order.enquiryStatus === 'quoted' ? 'Quote Ready - Action Required' 
+                           : order.enquiryStatus === 'accepted' ? 'Quote Accepted & Processing' 
+                           : 'Quote Rejected')
+                        : (order.isDelivered ? 'Delivered' : 'Arriving Soon')}
                     </h3>
                   </div>
 
@@ -100,15 +115,26 @@ const MyOrdersPage = () => {
                             </Link>
                             <p className="text-xs text-gray-500 mt-1">Quantity: {item.qty}</p>
                             <div className="mt-4 flex space-x-4">
-                              <button 
-                                onClick={() => navigate(`/product/${item.product}`)}
-                                className="bg-amazon_yellow text-black text-xs font-bold py-2 px-4 rounded-md hover:bg-yellow-500 shadow-sm"
-                              >
-                                Buy it again
-                              </button>
-                              <button className="bg-white border border-gray-300 text-black text-xs font-bold py-2 px-4 rounded-md hover:bg-gray-50 shadow-sm">
-                                Track package
-                              </button>
+                              {order.orderType === 'enquiry' ? (
+                                <button 
+                                  onClick={() => navigate(`/order/${order._id}`)}
+                                  className="bg-amber-400 text-slate-900 text-xs font-bold py-2 px-4 rounded-md hover:bg-amber-500 shadow-sm"
+                                >
+                                  View Quote
+                                </button>
+                              ) : (
+                                <>
+                                  <button 
+                                    onClick={() => navigate(`/product/${item.product}`)}
+                                    className="bg-amazon_yellow text-black text-xs font-bold py-2 px-4 rounded-md hover:bg-yellow-500 shadow-sm"
+                                  >
+                                    Buy it again
+                                  </button>
+                                  <button className="bg-white border border-gray-300 text-black text-xs font-bold py-2 px-4 rounded-md hover:bg-gray-50 shadow-sm">
+                                    Track package
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>

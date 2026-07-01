@@ -14,8 +14,10 @@ import {
   Box,
   Wrench,
   Tractor,
-  CalendarClock,
   ShieldCheck,
+  Zap,
+  Droplets,
+  Paintbrush,
 } from 'lucide-react';
 import { logout } from '../store/slices/authSlice';
 import { saveShippingAddress } from '../store/slices/cartSlice';
@@ -68,8 +70,10 @@ const Navbar = () => {
     { label: 'Steel', to: '/category/Steel', icon: Box },
     { label: 'Tools', to: '/category/Tools', icon: Wrench },
     { label: 'Machinery', to: '/category/Machinery', icon: Tractor },
-    { label: 'Rentals', to: '/category/Rentals', icon: CalendarClock, badge: 'NEW' },
-    { label: 'Safety Equipment', to: '/category/Safety', icon: ShieldCheck },
+    { label: 'Safety', to: '/category/Safety', icon: ShieldCheck },
+    { label: 'Electrical', to: '/category/Electrical', icon: Zap },
+    { label: 'Plumbing', to: '/category/Plumbing', icon: Droplets },
+    { label: 'Paint', to: '/category/Paint', icon: Paintbrush },
   ];
 
   const submitHandler = (e) => {
@@ -355,15 +359,14 @@ const Navbar = () => {
             <Link
               key={category.label}
               to={category.to}
-                            className={`relative inline-flex items-center gap-2 rounded-full px-3 py-2 font-semibold transition-colors text-white/80`}
+              className={`relative inline-flex items-center gap-2 rounded-full px-3 py-2 font-semibold transition-all duration-200 whitespace-nowrap ${
+                isActive
+                  ? 'bg-[#f5a623] text-slate-950 shadow-md shadow-[#f5a623]/25'
+                  : 'text-white/70 hover:bg-white/10 hover:text-white'
+              }`}
             >
               <Icon className="h-4 w-4" />
               <span>{category.label}</span>
-              {category.badge ? (
-                <span className="rounded-full bg-[#f5a623] px-2 py-0.5 text-[10px] font-black text-slate-950">
-                  {category.badge}
-                </span>
-              ) : null}
             </Link>
           );
         })}

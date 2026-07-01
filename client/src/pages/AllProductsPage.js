@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { listProducts } from '../store/slices/productSlice';
 import { addToCart } from '../store/slices/cartSlice';
@@ -23,14 +23,56 @@ const CATEGORIES = [
   { label: 'Paint', icon: '🎨' },
 ];
 
-const BRANDS = ['UltraTech', 'Tata Steel', 'Bosch', 'Asian Paints', 'ACC', 'Havells', 'Finolex', 'Karam', '3M'];
-const MATERIAL_TYPES = [
-  { label: 'Cement', icon: '🧱' },
-  { label: 'Steel Rebar', icon: '🔩' },
-  { label: 'Bricks', icon: '🏗️' },
-  { label: 'Sand', icon: '⛰️' },
-  { label: 'Aggregates', icon: '🪨' },
-];
+const ALL_MATERIAL_TYPES = {
+  Cement: [
+    { label: 'OPC Cement', icon: '🧱' },
+    { label: 'PPC Cement', icon: '🧱' },
+    { label: 'White Cement', icon: '🧱' },
+    { label: 'Waterproof', icon: '💧' },
+  ],
+  Steel: [
+    { label: 'Rebar', icon: '🔩' },
+    { label: 'I-Beam', icon: '🏗️' },
+    { label: 'Wire', icon: '🔗' },
+    { label: 'Angle', icon: '📐' },
+  ],
+  Tools: [
+    { label: 'Drill', icon: '🪛' },
+    { label: 'Saw', icon: '🪚' },
+    { label: 'Hammer', icon: '🔨' },
+    { label: 'Measurement', icon: '📏' },
+  ],
+  Machinery: [
+    { label: 'Mixer', icon: '🔄' },
+    { label: 'Excavator', icon: '🚜' },
+    { label: 'Compactor', icon: '🔨' },
+    { label: 'Hoist', icon: '🏗️' },
+  ],
+  Safety: [
+    { label: 'Helmet', icon: '⛑️' },
+    { label: 'Gloves', icon: '🧤' },
+    { label: 'Shoes', icon: '🥾' },
+    { label: 'Mask', icon: '😷' },
+    { label: 'Vest', icon: '🦺' },
+  ],
+  Electrical: [
+    { label: 'Wire', icon: '⚡' },
+    { label: 'MCB', icon: '🎛️' },
+    { label: 'Pipe', icon: '🔌' },
+    { label: 'Light', icon: '💡' },
+  ],
+  Plumbing: [
+    { label: 'CPVC', icon: '🚰' },
+    { label: 'PVC', icon: '💧' },
+    { label: 'Pump', icon: '⚙️' },
+    { label: 'Fittings', icon: '🔧' },
+  ],
+  Paint: [
+    { label: 'Emulsion', icon: '🎨' },
+    { label: 'Primer', icon: '🖌️' },
+    { label: 'Waterproof', icon: '💧' },
+  ],
+};
 
 const SORT_OPTIONS = [
   { label: 'Popular Now', value: 'popular' },
@@ -39,11 +81,12 @@ const SORT_OPTIONS = [
 ];
 
 const AllProductsPage = () => {
+  const { category: urlCategory } = useParams();
   const dispatch = useDispatch();
   const { products, loading, error } = useSelector((state) => state.products);
 
   // Filters
-  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState(urlCategory ? [urlCategory] : []);
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [priceRange, setPriceRange] = useState([0, 100000]);
@@ -52,9 +95,47 @@ const AllProductsPage = () => {
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
+  // Sync category filter when navigating between navbar tabs
+  useEffect(() => {
+    if (urlCategory) {
+      setSelectedCategories([urlCategory]);
+    } else {
+      setSelectedCategories([]);
+    }
+    // Reset other filters when switching categories via navbar
+    setSelectedBrands([]);
+    setSelectedTypes([]);
+    setPriceRange([0, 100000]);
+    setInStockOnly(false);
+    setSortBy('popular');
+  }, [urlCategory]);
+
   useEffect(() => {
     dispatch(listProducts({ keyword: '', pageNumber: '', category: '', pageSize: 100 }));
   }, [dispatch]);
+
+  // Compute available filters based on selected category
+  const availableBrands = useMemo(() => {
+    let baseProducts = products;
+    if (urlCategory) {
+      baseProducts = baseProducts.filter(p => p.category === urlCategory);
+    }
+    return Array.from(new Set(baseProducts.map((p) => p.brand))).sort();
+  }, [products, urlCategory]);
+
+  const availableTypes = useMemo(() => {
+    if (urlCategory && ALL_MATERIAL_TYPES[urlCategory]) {
+      return ALL_MATERIAL_TYPES[urlCategory];
+    }
+    // If no category or unknown category, show a mixed sample
+    return [
+      { label: 'Cement', icon: '🧱' },
+      { label: 'Steel Rebar', icon: '🔩' },
+      { label: 'Tools', icon: '🔨' },
+      { label: 'Machinery', icon: '🚜' },
+      { label: 'Safety', icon: '🦺' },
+    ];
+  }, [urlCategory]);
 
   const toggleBrand = (brand) => {
     setSelectedBrands((prev) =>
@@ -129,6 +210,8 @@ const AllProductsPage = () => {
         name: product.name,
         image: product.image,
         price: product.price,
+        basePrice: product.price,
+        wholesaleTiers: product.wholesaleTiers,
         countInStock: product.countInStock,
         qty: 1,
       })
@@ -160,67 +243,75 @@ const AllProductsPage = () => {
         </h2>
       )}
 
-      {/* Category */}
-      <div>
-        <h3 className="text-sm font-bold text-gray-900 mb-3">Category</h3>
-        <div className="grid grid-cols-2 gap-2">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.label}
-              onClick={() => toggleCategory(cat.label)}
-              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-all ${
-                selectedCategories.includes(cat.label)
-                  ? 'border-amber-400 bg-amber-50 text-amber-800'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-              }`}
-            >
-              <span className="text-lg">{cat.icon}</span>
-              <span>{cat.label}</span>
-            </button>
-          ))}
+      {/* Category - Only show if we are NOT in a specific category route */}
+      {!urlCategory && (
+        <div>
+          <h3 className="text-sm font-bold text-gray-900 mb-3">Category</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.label}
+                onClick={() => toggleCategory(cat.label)}
+                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-all ${
+                  selectedCategories.includes(cat.label)
+                    ? 'border-amber-400 bg-amber-50 text-amber-800'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                <span className="text-lg">{cat.icon}</span>
+                <span>{cat.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Brand */}
-      <div>
-        <h3 className="text-sm font-bold text-gray-900 mb-3">Brand</h3>
-        <div className="flex flex-wrap gap-2">
-          {BRANDS.map((brand) => (
-            <button
-              key={brand}
-              onClick={() => toggleBrand(brand)}
-              className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-all ${
-                selectedBrands.includes(brand)
-                  ? 'border-amber-400 bg-amber-50 text-amber-800'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-              }`}
-            >
-              {brand}
-            </button>
-          ))}
+      {availableBrands.length > 0 && (
+        <div>
+          <h3 className="text-sm font-bold text-gray-900 mb-3">Brand</h3>
+          <div className="flex flex-wrap gap-2">
+            {availableBrands.map((brand) => (
+              <button
+                key={brand}
+                onClick={() => toggleBrand(brand)}
+                className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-all ${
+                  selectedBrands.includes(brand)
+                    ? 'border-amber-400 bg-amber-50 text-amber-800'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                {brand}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Material Type */}
-      <div>
-        <h3 className="text-sm font-bold text-gray-900 mb-3">Material Type</h3>
-        <div className="grid grid-cols-3 gap-2">
-          {MATERIAL_TYPES.map((mat) => (
-            <button
-              key={mat.label}
-              onClick={() => toggleType(mat.label)}
-              className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-xs font-semibold transition-all ${
-                selectedTypes.includes(mat.label)
-                  ? 'border-amber-400 bg-amber-50 text-amber-800'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-              }`}
-            >
-              <span className="text-2xl">{mat.icon}</span>
-              <span>{mat.label}</span>
-            </button>
-          ))}
+      {/* Sub Types / Material Types */}
+      {availableTypes.length > 0 && (
+        <div>
+          <h3 className="text-sm font-bold text-gray-900 mb-3">
+            {urlCategory === 'Tools' || urlCategory === 'Machinery' ? 'Equipment Type' : 'Material Type'}
+          </h3>
+          <div className="grid grid-cols-3 gap-2">
+            {availableTypes.map((mat) => (
+              <button
+                key={mat.label}
+                onClick={() => toggleType(mat.label)}
+                className={`flex flex-col items-center justify-center text-center gap-1 rounded-xl border p-2 text-xs font-semibold transition-all ${
+                  selectedTypes.includes(mat.label)
+                    ? 'border-amber-400 bg-amber-50 text-amber-800'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                <span className="text-2xl">{mat.icon}</span>
+                <span className="leading-tight">{mat.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Price Range */}
       <div>
@@ -280,6 +371,27 @@ const AllProductsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Page Header */}
+      {urlCategory && (
+        <div className="bg-gradient-to-r from-[#0f1117] to-[#181b24] px-4 py-6">
+          <div className="max-w-screen-2xl mx-auto">
+            <p className="text-sm text-white/50 mb-1">
+              <Link to="/" className="hover:text-white transition-colors">Home</Link>
+              {' / '}
+              <Link to="/all-products" className="hover:text-white transition-colors">All Products</Link>
+              {' / '}
+              <span className="text-[#f5a623]">{urlCategory}</span>
+            </p>
+            <h1 className="text-3xl font-black text-white">
+              {urlCategory}
+            </h1>
+            <p className="text-sm text-white/60 mt-1">
+              {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Top bar */}
       <div className="border-b border-gray-200 bg-white px-4 py-3">
         <div className="max-w-screen-2xl mx-auto flex items-center justify-between">

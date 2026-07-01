@@ -143,6 +143,36 @@ const getOrders = async (req, res) => {
   res.json(orders);
 };
 
+// @desc    Create bulk quote enquiry
+// @route   POST /api/orders/enquiry
+// @access  Private
+const createEnquiry = async (req, res) => {
+  const { orderItems, customNotes } = req.body;
+
+  if (orderItems && orderItems.length === 0) {
+    res.status(400).json({ message: 'No order items' });
+    return;
+  } else {
+    const order = new Order({
+      orderItems,
+      user: req.user._id,
+      orderType: 'enquiry',
+      enquiryStatus: 'pending',
+      customNotes,
+      // Placeholder data for required fields until quote is accepted
+      shippingAddress: { address: 'TBD', city: 'TBD', postalCode: '00000', country: 'TBD' },
+      paymentMethod: 'Quote',
+      itemsPrice: 0,
+      taxPrice: 0,
+      shippingPrice: 0,
+      totalPrice: 0,
+    });
+
+    const createdOrder = await order.save();
+    res.status(201).json(createdOrder);
+  }
+};
+
 module.exports = {
   addOrderItems,
   getOrderById,
@@ -150,4 +180,5 @@ module.exports = {
   updateOrderToDelivered,
   getMyOrders,
   getOrders,
+  createEnquiry,
 };

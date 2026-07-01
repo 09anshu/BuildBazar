@@ -17,6 +17,11 @@ const products = [
     category: 'Cement',
     description: 'High quality Ordinary Portland Cement suitable for all general construction work. Provides superior strength and durability for foundations, columns, beams, and slabs.',
     price: 365,
+    wholesaleTiers: [
+      { minQuantity: 15, price: 350 },
+      { minQuantity: 25, price: 335 },
+      { minQuantity: 50, price: 310 }
+    ],
     countInStock: 500,
     rating: 4.5,
     numReviews: 28,

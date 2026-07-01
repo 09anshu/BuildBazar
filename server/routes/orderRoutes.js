@@ -7,10 +7,12 @@ const {
   updateOrderToDelivered,
   getMyOrders,
   getOrders,
+  createEnquiry,
 } = require('../controllers/orderController');
 const { protect, admin, seller } = require('../middleware/authMiddleware');
 
 router.route('/').post(protect, addOrderItems).get(protect, admin, getOrders);
+router.route('/enquiry').post(protect, createEnquiry);
 router.route('/myorders').get(protect, getMyOrders);
 router.route('/:id').get(protect, getOrderById);
 router.route('/:id/pay').put(protect, updateOrderToPaid);

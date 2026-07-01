@@ -17,8 +17,21 @@ const cartSlice = createSlice({
   },
   reducers: {
     addToCart: (state, action) => {
-      const item = action.payload;
+      let item = action.payload;
       const existItem = state.cartItems.find((x) => x.product === item.product);
+
+      // Recalculate price if wholesale tiers exist
+      if (item.wholesaleTiers && item.wholesaleTiers.length > 0) {
+        const sortedTiers = [...item.wholesaleTiers].sort((a, b) => b.minQuantity - a.minQuantity);
+        let activePrice = item.basePrice || item.price;
+        for (let tier of sortedTiers) {
+          if (item.qty >= tier.minQuantity) {
+            activePrice = tier.price;
+            break;
+          }
+        }
+        item.price = activePrice;
+      }
 
       if (existItem) {
         state.cartItems = state.cartItems.map((x) =>

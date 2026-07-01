@@ -50,7 +50,7 @@ function App() {
             {/* Search, Category, and All Products routes */}
             <Route path="/all-products" element={<AllProductsPage />} />
             <Route path="/search/:keyword" element={<HomePage />} />
-            <Route path="/category/:category" element={<HomePage />} />
+            <Route path="/category/:category" element={<AllProductsPage />} />
           </Routes>
         </main>
         <Footer />

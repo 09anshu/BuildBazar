@@ -55,17 +55,21 @@ const CartPage = () => {
                         <p className="text-xs text-green-700 font-bold mt-1">In Stock</p>
                         <p className="text-xs text-gray-500 mt-1">Eligible for FREE Shipping</p>
                         <div className="flex items-center mt-3 space-x-4">
-                          <div className="flex items-center bg-gray-100 rounded-md border border-gray-300">
+                          <div className="flex items-center bg-gray-100 rounded-md border border-gray-300 overflow-hidden">
                             <span className="px-2 text-xs font-bold text-gray-600">Qty:</span>
-                            <select 
+                            <input 
+                              type="number"
+                              min="1"
+                              max={item.countInStock}
                               value={item.qty} 
-                              onChange={(e) => dispatch(addToCart({ ...item, qty: Number(e.target.value) }))}
-                              className="bg-transparent p-1 text-sm focus:outline-none"
-                            >
-                              {[...Array(item.countInStock).keys()].slice(0, 10).map((x) => (
-                                <option key={x + 1} value={x + 1}>{x + 1}</option>
-                              ))}
-                            </select>
+                              onChange={(e) => {
+                                const val = Number(e.target.value);
+                                if (val > 0 && val <= item.countInStock) {
+                                  dispatch(addToCart({ ...item, qty: val }));
+                                }
+                              }}
+                              className="bg-transparent p-1.5 w-16 text-sm outline-none font-semibold text-center border-l border-gray-300"
+                            />
                           </div>
                           <button 
                             onClick={() => removeFromCartHandler(item.product)}
@@ -78,6 +82,14 @@ const CartPage = () => {
                       </div>
                     </div>
                     <div className="text-right w-full sm:w-auto">
+                      {item.basePrice && item.price < item.basePrice && (
+                        <div className="flex flex-col items-end">
+                          <p className="text-xs text-gray-400 line-through">₹{item.basePrice.toLocaleString('en-IN')}</p>
+                          <p className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded mb-1 border border-emerald-100">
+                            Bulk Discount Applied!
+                          </p>
+                        </div>
+                      )}
                       <p className="text-xl font-bold">₹{item.price.toLocaleString('en-IN')}</p>
                     </div>
                   </div>
